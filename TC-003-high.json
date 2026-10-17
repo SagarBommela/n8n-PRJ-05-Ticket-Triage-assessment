@@ -1,0 +1,8 @@
+{
+  "customer_name": "Rahul Kumar",
+  "email": "sagarbommela211@gmail.com",
+  "category": "Payments",
+  "priority": "High",
+  "subject": "Payment processing failure",
+  "description": "Multiple payment attempts are failing for our account."
+}

@@ -1,0 +1,8 @@
+{
+  "customer_name": "Johnathan Doe",
+  "email": "sagarbommela211@gmail.com",
+  "category": "Infrastructure",
+  "priority": "Critical",
+  "subject": " Production Database Connection Timeout ",
+  "description": " Our production database is not accepting new SSL connections. "
+}
