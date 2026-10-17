@@ -1,0 +1,986 @@
+{
+  "name": "N8N-PRJ-05 Customer Support Ticket Triage",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "v1/support-ticket",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -496,
+        0
+      ],
+      "id": "c54ffc8e-b55d-41c4-8b93-5d099dcbded4",
+      "name": "Support Ticket Intake",
+      "webhookId": "c3d1c90e-5466-443c-864b-7c09c55c5e21"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "10c9e5b5-a99e-4054-a3b2-cc4cd19b0217",
+              "name": "Ticket_ID",
+              "value": "={{ 'TCK-' + $now.toFormat('yyyyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000) }}",
+              "type": "string"
+            },
+            {
+              "id": "92c17d4e-e393-4bad-b81a-b8ecc8e04075",
+              "name": "Created_At",
+              "value": "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+              "type": "string"
+            },
+            {
+              "id": "b226e5f2-ee5d-42c3-aa2c-c5763f98af5d",
+              "name": "customer_name",
+              "value": "={{ ($json.body?.customer_name ?? $json.customer_name ?? '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "aafb7ec7-da01-45bf-80fe-5bbe1dbf1f91",
+              "name": "email",
+              "value": "={{ ($json.body?.email ?? $json.email ?? '').trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "ec9db5e3-4c75-4ae8-919c-b95e2eeb5ffa",
+              "name": "category",
+              "value": "={{ ($json.body?.category ?? $json.category ?? '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "23a1f700-06d6-445c-8779-4429d0c4dba0",
+              "name": "priority",
+              "value": "={{ ($json.body?.priority ?? $json.priority ?? '').trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "b40371a8-1092-4e2d-ae5c-6ead9bcc2edc",
+              "name": "subject",
+              "value": "={{ ($json.body?.subject ?? $json.subject ?? '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "2a48636e-e123-4b1c-9ac2-d33e17e7cf74",
+              "name": "description",
+              "value": "={{ ($json.body?.description ?? $json.description ?? '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "07c549eb-0498-453e-a134-a8c93f0d38a0",
+              "name": "Status",
+              "value": "Open",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "af110028-d382-4105-a3a2-91460bd5b07f",
+      "name": "Sanitize and Generate Ticket ID"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b8871a56-addd-43fb-ae81-1ce3cb715eac",
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "critical",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "98e3f30f-ca5e-49c5-90b7-e916001f9e04",
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "high",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b0b02d08-ab4c-474d-ae88-0a6ff25c0318",
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "standard",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": false
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "5f650276-6433-4059-9cd9-5f67296fe14c",
+      "name": "Route by Priority"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ccc0bd04-9a95-46d8-a4a4-4b460a403dde",
+              "name": "sla_hours",
+              "value": 2,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        80,
+        -144
+      ],
+      "id": "584d7c8a-515b-440b-8483-7b425f956d10",
+      "name": "Set Critical SLA"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "24bd5369-dde2-4e28-82b0-0b34c66416b0",
+              "name": "sla_hours",
+              "value": 4,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        80,
+        0
+      ],
+      "id": "bd6ce014-d7f9-44c3-9f44-518a803c5ab0",
+      "name": "Set High SLA"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3075a62f-8349-48cc-b48d-9269ec6d1f49",
+              "name": "sla_hours",
+              "value": 24,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        96,
+        144
+      ],
+      "id": "d8bc5e01-5be5-443a-aff9-6fe121a884a3",
+      "name": "Set Standard SLA"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"created\",\n  \"ticket_id\": \"={{ $json.Ticket_ID }}\",\n  \"sla_hours\": \"={{ $json.sla_hours }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        240,
+        -144
+      ],
+      "id": "22f13a4e-a65a-49e9-a23b-3c75e75f22c2",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"created\",\n  \"ticket_id\": \"={{ $json.Ticket_ID }}\",\n  \"sla_hours\": \"={{ $json.sla_hours }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        240,
+        0
+      ],
+      "id": "4f91e53d-a5d8-427e-9f42-40dd280230da",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"created\",\n  \"ticket_id\": \"={{ $json.Ticket_ID }}\",\n  \"sla_hours\": \"={{ $json.sla_hours }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        272,
+        144
+      ],
+      "id": "34b82694-e0a3-40e6-b3a7-4b4b3ba5ee71",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/19C4GH12wv6kpzNODFRykYAbtjTTf9hQ9u9RUcGwp0FE/edit?gid=1439451280#gid=1439451280",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/19C4GH12wv6kpzNODFRykYAbtjTTf9hQ9u9RUcGwp0FE/edit?gid=1439451280#gid=1439451280",
+          "mode": "url"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ticket_ID": "={{ $json.Ticket_ID }}",
+            "Created_At": "={{ $json.Created_At }}",
+            "Customer_Name": "={{ $json.customer_name }}",
+            "Customer_Email": "={{ $json.email }}",
+            "Category": "={{ $json.category }}",
+            "Priority": "={{ $json.priority }}",
+            "Subject": "={{ $json.subject }}",
+            "Target_SLA_Hrs": "={{ $json.sla_hours }}",
+            "Status": "={{ $json.Status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Ticket_ID",
+              "displayName": "Ticket_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_At",
+              "displayName": "Created_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Name",
+              "displayName": "Customer_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Email",
+              "displayName": "Customer_Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_SLA_Hrs",
+              "displayName": "Target_SLA_Hrs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        416,
+        -144
+      ],
+      "id": "97fc6dc0-83c1-48b2-b426-f22df96d421d",
+      "name": "Save Critical Ticket",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MMlf7KsLAXT6rPiX",
+          "name": "Google Sheets account 44"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Customer_Email }}",
+        "subject": "={{ '[Support Ticket ' + $json.Ticket_ID + '] We received your request' }}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;\">   <div style=\"background:#17365D;color:#fff;padding:20px;\">     <h2 style=\"margin:0;\">Support Team</h2>     <p style=\"margin:8px 0 0;\">Ticket confirmation</p>   </div>    <div style=\"padding:24px;border:1px solid #ddd;\">     <p>Hello{{ $json.Customer_Name }} ,</p>      <p>Thank you for contacting our support team.        Your ticket has been received.</p>      <p><strong>Ticket reference:</strong> {{ $json.Ticket_ID }}</p>     <p><strong>Category:</strong> {{ $json.Category }}   </p>     <p><strong>Priority:</strong>{{ $json.Priority }} </p>     <p><strong>Subject:</strong>{{ $json.Subject }}    </p>     <p><strong>Target response time:</strong>  {{ $json.Target_SLA_Hrs }}       hours</p>      <p>Our support team will review your request        according to the target response time above.</p>      <p>Regards,<br>Customer Support Team</p>   </div> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        -144
+      ],
+      "id": "d8167f04-e5d3-41df-8506-9f6dd509155f",
+      "name": "Customer Acknowledgment Critical",
+      "webhookId": "ddcdc2f8-2709-43cf-a9ff-29557e2b30c8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7trozTjuwXMvj8ES",
+          "name": "Gmail account 16"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Save Critical Ticket').item.json.Customer_Email }}",
+        "subject": "={{ '[ESCALATION] Critical Support Ticket: ' +  $('Save Critical Ticket').item.json.Ticket_ID}}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;color:#333;\">   <div style=\"background:#B91C1C;color:#fff;padding:16px;\">     <h2 style=\"margin:0;\">URGENT: Critical Support Ticket</h2>   </div>    <div style=\"padding:20px;\">     <p>A Critical support ticket has been received and requires        immediate attention.</p>      <p><strong>Ticket ID:</strong>  {{ $('Save Critical Ticket').item.json.Ticket_ID }}  </p>     <p><strong>Customer:</strong> {{ $('Save Critical Ticket').item.json.Customer_Name }}      </p>     <p><strong>Email:</strong> {{ $('Save Critical Ticket').item.json.Customer_Email }}</p>     <p><strong>Category:</strong> {{ $('Save Critical Ticket').item.json.Category }}</p>     <p><strong>Subject:</strong> {{ $('Save Critical Ticket').item.json.Subject }}</p> <p><strong>Target SLA:</strong>{{ $('Save Critical Ticket').item.json.Target_SLA_Hrs }}  hours</p>      <p>Please review and assign this incident immediately.</p>   </div> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        -144
+      ],
+      "id": "e22190d0-8f3f-40c8-9868-ee092da4b468",
+      "name": "Critical Lead Escalation",
+      "webhookId": "4e274b46-c53f-465b-9a19-34621118f684",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7trozTjuwXMvj8ES",
+          "name": "Gmail account 16"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Customer_Email }}",
+        "subject": "={{ '[Standard PRIORITY] Support Ticket: ' + $json.Ticket_ID }}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;\">   <div style=\"background:#17365D;color:#fff;padding:20px;\">     <h2 style=\"margin:0;\">Support Team</h2>     <p style=\"margin:8px 0 0;\">Ticket confirmation</p>   </div>    <div style=\"padding:24px;border:1px solid #ddd;\">     <p>Hello{{ $json.Customer_Name }} ,</p>      <p>Thank you for contacting our support team.        Your ticket has been received.</p>      <p><strong>Ticket reference:</strong> {{ $json.Ticket_ID }}</p>     <p><strong>Category:</strong> {{ $json.Category }}   </p>     <p><strong>Priority:</strong>{{ $json.Priority }} </p>     <p><strong>Subject:</strong>{{ $json.Subject }}    </p>     <p><strong>Target response time:</strong>  {{ $json.Target_SLA_Hrs }}       hours</p>      <p>Our support team will review your request        according to the target response time above.</p>      <p>Regards,<br>Customer Support Team</p>   </div> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        576,
+        144
+      ],
+      "id": "1ff23481-2d7c-4615-a40d-18655586d965",
+      "name": "Customer Acknowledgment Standard",
+      "webhookId": "8c458146-5c65-45f5-a290-3fedeb7304cc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7trozTjuwXMvj8ES",
+          "name": "Gmail account 16"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/19C4GH12wv6kpzNODFRykYAbtjTTf9hQ9u9RUcGwp0FE/edit?gid=1439451280#gid=1439451280",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/19C4GH12wv6kpzNODFRykYAbtjTTf9hQ9u9RUcGwp0FE/edit?gid=1439451280#gid=1439451280",
+          "mode": "url"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ticket_ID": "={{ $json.Ticket_ID }}",
+            "Created_At": "={{ $json.Created_At }}",
+            "Customer_Name": "={{ $json.customer_name }}",
+            "Customer_Email": "={{ $json.email }}",
+            "Category": "={{ $json.category }}",
+            "Priority": "={{ $json.priority }}",
+            "Subject": "={{ $json.subject }}",
+            "Target_SLA_Hrs": "={{ $json.sla_hours }}",
+            "Status": "={{ $json.Status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Ticket_ID",
+              "displayName": "Ticket_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_At",
+              "displayName": "Created_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Name",
+              "displayName": "Customer_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Email",
+              "displayName": "Customer_Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_SLA_Hrs",
+              "displayName": "Target_SLA_Hrs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        416,
+        0
+      ],
+      "id": "0018664f-d6ae-4e4e-9836-ad5495996c07",
+      "name": "Save High Ticket",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MMlf7KsLAXT6rPiX",
+          "name": "Google Sheets account 44"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/19C4GH12wv6kpzNODFRykYAbtjTTf9hQ9u9RUcGwp0FE/edit?gid=1439451280#gid=1439451280",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/19C4GH12wv6kpzNODFRykYAbtjTTf9hQ9u9RUcGwp0FE/edit?gid=1439451280#gid=1439451280",
+          "mode": "url"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ticket_ID": "={{ $json.Ticket_ID }}",
+            "Created_At": "={{ $json.Created_At }}",
+            "Customer_Name": "={{ $json.customer_name }}",
+            "Customer_Email": "={{ $json.email }}",
+            "Category": "={{ $json.category }}",
+            "Priority": "={{ $json.priority }}",
+            "Subject": "={{ $json.subject }}",
+            "Target_SLA_Hrs": "={{ $json.sla_hours }}",
+            "Status": "={{ $json.Status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Ticket_ID",
+              "displayName": "Ticket_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_At",
+              "displayName": "Created_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Name",
+              "displayName": "Customer_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Email",
+              "displayName": "Customer_Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Target_SLA_Hrs",
+              "displayName": "Target_SLA_Hrs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        432,
+        144
+      ],
+      "id": "ac2335b8-b531-46af-9bda-f316d296ea18",
+      "name": "Save Standard Ticket",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MMlf7KsLAXT6rPiX",
+          "name": "Google Sheets account 44"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Customer_Email }}",
+        "subject": "={{ '[HIGH PRIORITY] Support Ticket: ' + $json.Ticket_ID }}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;\">   <div style=\"background:#17365D;color:#fff;padding:20px;\">     <h2 style=\"margin:0;\">Support Team</h2>     <p style=\"margin:8px 0 0;\">Ticket confirmation</p>   </div>    <div style=\"padding:24px;border:1px solid #ddd;\">     <p>Hello{{ $json.Customer_Name }} ,</p>      <p>Thank you for contacting our support team.        Your ticket has been received.</p>      <p><strong>Ticket reference:</strong> {{ $json.Ticket_ID }}</p>     <p><strong>Category:</strong> {{ $json.Category }}   </p>     <p><strong>Priority:</strong>{{ $json.Priority }} </p>     <p><strong>Subject:</strong>{{ $json.Subject }}    </p>     <p><strong>Target response time:</strong>  {{ $json.Target_SLA_Hrs }}       hours</p>      <p>Our support team will review your request        according to the target response time above.</p>      <p>Regards,<br>Customer Support Team</p>   </div> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        576,
+        0
+      ],
+      "id": "39a69b18-b0e9-47aa-8bd6-ca361d2f0de7",
+      "name": "Customer Acknowledgment High",
+      "webhookId": "4244108b-c714-4dde-8ab7-16e4e2296561",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7trozTjuwXMvj8ES",
+          "name": "Gmail account 16"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Save High Ticket').item.json.Customer_Email }}",
+        "subject": "={{ '[HIGH PRIORITY Notification] Support Ticket: ' + $json.Ticket_ID }}",
+        "message": "=Hello{{ $('Save High Ticket').item.json.Customer_Name }} ,\n\nYour support ticket has been received and marked as HIGH PRIORITY.\n\nTicket Details:\n- Ticket Reference: {{ $('Save High Ticket').item.json.Ticket_ID }}\n- Category:{{ $('Save High Ticket').item.json.Category }}\n- Priority:{{ $('Save High Ticket').item.json.Priority }}\n- Subject: {{ $('Save High Ticket').item.json.Subject }}\n- Target Response Time: {{ $('Save High Ticket').item.json.Target_SLA_Hrs }}\n\n This ticket requires urgent attention. Our support team will prioritize your request and review it according to the target response time.\n\nRegards,\nCustomer Support Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        0
+      ],
+      "id": "36dafa49-c503-43b1-8266-234c5894e81c",
+      "name": "High Priority Queue Notification",
+      "webhookId": "5ccc90fe-3e3f-476a-9f18-002fdae7b031",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7trozTjuwXMvj8ES",
+          "name": "Gmail account 16"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Support Ticket Intake": {
+      "main": [
+        [
+          {
+            "node": "Sanitize and Generate Ticket ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitize and Generate Ticket ID": {
+      "main": [
+        [
+          {
+            "node": "Route by Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Priority": {
+      "main": [
+        [
+          {
+            "node": "Set Critical SLA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set High SLA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Standard SLA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Critical SLA": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set High SLA": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Standard SLA": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Save Critical Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Critical Ticket": {
+      "main": [
+        [
+          {
+            "node": "Customer Acknowledgment Critical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer Acknowledgment Critical": {
+      "main": [
+        [
+          {
+            "node": "Critical Lead Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook2": {
+      "main": [
+        [
+          {
+            "node": "Save High Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook3": {
+      "main": [
+        [
+          {
+            "node": "Save Standard Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Standard Ticket": {
+      "main": [
+        [
+          {
+            "node": "Customer Acknowledgment Standard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save High Ticket": {
+      "main": [
+        [
+          {
+            "node": "Customer Acknowledgment High",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer Acknowledgment High": {
+      "main": [
+        [
+          {
+            "node": "High Priority Queue Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8af4f0e5-32f4-4a28-a9fa-61a895606eb5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "nodeGroups": [],
+  "id": "cxxmcxPmazkhpX7z",
+  "tags": []
+}
